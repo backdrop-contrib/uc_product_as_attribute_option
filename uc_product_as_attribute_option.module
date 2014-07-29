@@ -57,9 +57,11 @@ function uc_product_as_attribute_option_form_uc_product_add_to_cart_form_alter(&
           '#return_value' => $oid,
           '#title' => $option,
           '#parents' => array('attributes', $aid),
-          '#ajax' => $attributes[$aid]['#ajax'],
           '#default_value' => $attributes[$aid]['#default_value'] == $oid,
         );
+        if (isset($attributes[$aid]['#ajax'])) {
+          $form['attributes'][$aid][$oid]['radio']['#ajax'] = $attributes[$aid]['#ajax'];
+        }
 
         $form['attributes'][$aid][$oid]['description'] = array(
           '#type' => 'container',
