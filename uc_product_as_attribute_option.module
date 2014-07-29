@@ -115,7 +115,11 @@ function uc_product_as_attribute_option_form_uc_attribute_option_form_alter(&$fo
   // Alters the global, admin attribute option forms at admin/store/products/attributes
   $attribute = $form_state['build_info']['args'][0];
   $option = $form_state['build_info']['args'][1];
-  $option_node = uc_product_as_attribute_option_get_option_node($option->oid);
+
+  $option_node = NULL;
+  if (isset($option)) {
+    $option_node = uc_product_as_attribute_option_get_option_node($option->oid);
+  }
 
   $form['uc_product_as_attribute_option_node'] = array(
     '#type' => 'entityreference',
