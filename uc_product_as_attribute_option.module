@@ -302,7 +302,8 @@ function uc_product_as_attribute_option_configure_adjustments($oid, $node) {
 function uc_product_as_attribute_option_uc_product_alter(&$variant) {
   // If we are displaying as a unit, we need to alter the price so that the
   // hidden product doesn't add the cost of its option twice
-  if (isset($variant->data['uc_product_as_attribute_option_products']) && variable_get('uc_product_as_attribute_option_cart_display', 'none') == 'unit') {
+  $cart_behavior = variable_get('uc_product_as_attribute_option_cart_display', 'none');
+  if (isset($variant->data['uc_product_as_attribute_option_products']) && in_array($cart_behavior, array('unit', 'individual'))) {
     foreach ($variant->data['uc_product_as_attribute_option_products'] as $nid) {
       if ($product = node_load($nid)) {
         $variant->price -= $product->sell_price;
