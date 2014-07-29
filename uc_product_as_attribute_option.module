@@ -85,18 +85,6 @@ function uc_product_as_attribute_option_form_uc_product_add_to_cart_form_alter(&
 }
 
 /**
- * Implements hook_form_FORM_ID_alter() for node_form().
- */
-function uc_product_as_attribute_option_form_node_form_alter(&$form, &$form_state, $form_id) {
-  $node = $form['#node'];
-  // Alter product node forms to check attributes and if applicable, update
-  // their options
-  if (in_array($node->type, uc_product_types())) {
-    $form['#submit'][] = 'uc_product_as_attribute_option_node_form_submit';
-  }
-}
-
-/**
  * Implements hook_form_FORM_ID_alter() for uc_product_settings_form().
  */
 function uc_product_as_attribute_option_form_uc_product_settings_form_alter(&$form, &$form_state) {
@@ -234,12 +222,15 @@ function uc_product_as_attribute_option_uc_product_add_to_cart_validate($form, &
 /**
  * Custom submit handler for node_form().
  */
-function uc_product_as_attribute_option_node_form_submit($form, &$form_state) {
-  $node = $form_state['node'];
-  foreach (uc_product_as_attribute_option_get_options_associated_to($node->nid) as $oid) {
-    uc_product_as_attribute_option_configure_adjustments($oid, $node);
+function uc_product_as_attribute_option_node_presave($node) {
+  if (isset($node->nid)) {
+    // On new nodes, we don't have a nid to work with but we inherit defaults
+    // so that's okay.
+    foreach (uc_product_as_attribute_option_get_options_associated_to($node->nid) as $oid) {
+      uc_product_as_attribute_option_configure_adjustments($oid, $node);
+    }
+    drupal_set_message(t('Updated the product associated attribute options adjustments.'));
   }
-  drupal_set_message(t('Updated the product associated attribute options adjustments.'));
 }
 
 /**
@@ -268,6 +259,7 @@ function uc_product_as_attribute_option_configure_adjustments($oid, $node) {
   $option = uc_attribute_option_load($oid);
   if (!$option) {
     drupal_set_message(t('An attribute option with ID !id does not exist.', array('!id' => $oid)), 'error');
+    return;
   }
 
   $option->cost = $node->cost;
