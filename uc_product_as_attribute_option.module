@@ -338,7 +338,7 @@ function uc_product_as_attribute_option_uc_add_to_cart($nid, $qty, $data) {
     // Re-add the same 'parent' product with our corresponding metadata
     $data['module'] = 'uc_product_as_attribute_option';
     $data['unique_id'] = $unique_id;
-    uc_cart_add_item($node->nid, $qty, $data, NULL, FALSE, FALSE, FALSE);
+    uc_cart_add_item($node->nid, $qty, $data, NULL, TRUE, FALSE, FALSE);
 
     // Rebuild the cart items cache.
     uc_cart_get_contents(NULL, 'rebuild');
