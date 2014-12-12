@@ -314,6 +314,20 @@ function uc_product_as_attribute_option_uc_product_alter(&$variant) {
 }
 
 /**
+ * Pass through our fake form values into the cart item data. This allows other
+ * modules to interact with this module as we add items to the cart by
+ * implementing hook_uc_add_to_cart_data($form_values).
+ */
+function uc_product_as_attribute_option_uc_add_to_cart_data($form_values) {
+  if (isset($form_values['uc_product_as_attribute_option_attached_to'])) {
+    return array(
+      'uc_product_as_attribute_option_attached_to' => $form_values['uc_product_as_attribute_option_attached_to'],
+    );
+  }
+  return array();
+}
+
+/**
  * Implements hook_uc_add_to_cart().
  */
 function uc_product_as_attribute_option_uc_add_to_cart($nid, $qty, $data) {
@@ -330,7 +344,7 @@ function uc_product_as_attribute_option_uc_add_to_cart($nid, $qty, $data) {
         continue;
       }
 
-      $child_data = array('uc_product_as_attribute_option_attached_to' => $node->nid, 'module' => 'uc_product_as_attribute_option', 'unique_id' => $unique_id) + module_invoke_all('uc_add_to_cart_data', array('nid' => $associations[$oid], 'qty' => $qty));
+      $child_data = array('module' => 'uc_product_as_attribute_option', 'unique_id' => $unique_id) + module_invoke_all('uc_add_to_cart_data', array('nid' => $associations[$oid], 'qty' => $qty, 'uc_product_as_attribute_option_attached_to' => $node->nid));
       uc_cart_add_item($associations[$oid], $qty, $child_data, NULL, FALSE, FALSE, FALSE);
 
       // Mark this as a child product so we can hide it from the cart later
