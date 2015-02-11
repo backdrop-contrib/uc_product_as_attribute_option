@@ -238,10 +238,15 @@ function uc_product_as_attribute_option_node_presave($node) {
 
   // On new nodes, we don't have a nid to work with but we inherit defaults
   // so that's okay.
-  foreach (uc_product_as_attribute_option_get_options_associated_to($node->nid) as $oid) {
-    uc_product_as_attribute_option_configure_adjustments($oid, $node);
+  $options = uc_product_as_attribute_option_get_options_associated_to($node->nid);
+  if ($options) {
+    foreach ($options as $oid) {
+      uc_product_as_attribute_option_configure_adjustments($oid, $node);
+    }
+    // Saving a product also saves all product kits - we're only showing this message when options were found, but just in case
+    // the kits do as well let's throw the title in there so as not to show duplicate messages to the user.
+    drupal_set_message(t('Updated the product associated attribute options adjustments for %title.', array('%title' => $node->title)));
   }
-  drupal_set_message(t('Updated the product associated attribute options adjustments.'));
 }
 
 /**
