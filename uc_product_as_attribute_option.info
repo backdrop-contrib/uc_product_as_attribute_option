@@ -1,9 +1,10 @@
 name = Ubercart Product as Attribute Option
 description = Allows for the association of attribute options to product nodes.
-core = 7.x
+type = module
+backdrop = 1.x
 package = Ubercart
 
-dependencies[] = uc_product
-dependencies[] = uc_cart
+;dependencies[] = uc_product
+;dependencies[] = uc_cart
 dependencies[] = uc_attribute
 dependencies[] = entityreference_autocomplete

@@ -1,7 +1,20 @@
 <?php
 /**
- * Allows for association of attribute options to other product nodes.
+ * @file
+ * Allows for the association of attribute options to product nodes.
  */
+
+/**
+ * Implements hook_config_info().
+ */
+function uc_product_as_attribute_option_config_info() {
+  return array(
+    'uc_product_as_attribute_option.settings' => array(
+      'label' => t('Ubercart Product as Attribute Option settings'),
+      'group' => t('Configuration'),
+    ),
+  );
+}
 
 /**
  * Implements hook_entity_info_alter().
@@ -21,8 +34,9 @@ function uc_product_as_attribute_option_form_uc_product_add_to_cart_form_alter(&
   if (!isset($form['attributes'])) {
     return;
   }
+
   $node = $form_state['build_info']['args'][0];
-  $form['#attached']['css'][] = drupal_get_path('module', 'uc_product_as_attribute_option') . '/uc_product_as_attribute_option.css';
+  $form['#attached']['css'][] = backdrop_get_path('module', 'uc_product_as_attribute_option') . '/uc_product_as_attribute_option.css';
   $associations = uc_product_as_attribute_option_get_associations_by_product($node->nid);
 
   // Our options are to either hacking uc_attribute.module (no), overriding
@@ -101,7 +115,7 @@ function uc_product_as_attribute_option_form_uc_product_settings_form_alter(&$fo
   $form['uc_product_as_attribute_option']['uc_product_as_attribute_option_cart_display'] = array(
     '#type' => 'radios',
     '#title' => t('Behavior during cart and checkout'),
-    '#default_value' => variable_get('uc_product_as_attribute_option_cart_display', 'none'),
+    '#default_value' => config_get('uc_product_as_attribute_option.settings', 'cart_display'),
     '#options' => array(
       'none' => t('No change: No itemization or stock management of products associated to options. Only the display of attribute options on product pages is changed.'),
       'none_stock' => t('Stock management only: No itemization but stock levels of products associated to options are managed.'),
@@ -245,7 +259,7 @@ function uc_product_as_attribute_option_node_presave($node) {
     }
     // Saving a product also saves all product kits - we're only showing this message when options were found, but just in case
     // the kits do as well let's throw the title in there so as not to show duplicate messages to the user.
-    drupal_set_message(t('Updated the product associated attribute options adjustments for %title.', array('%title' => $node->title)));
+    backdrop_set_message(t('Updated the product associated attribute options adjustments for %title.', array('%title' => $node->title)));
   }
 }
 
@@ -260,7 +274,7 @@ function uc_product_as_attribute_option_uc_attribute_option_form_submit($form, &
       uc_product_as_attribute_option_configure_adjustments($form_state['values']['oid'], $node);
     }
     else {
-      drupal_set_message(t('Error loading node !nid while configuring attribute options.', array('!nid' => $form_state['values']['uc_product_as_attribute_option_node'])));
+      backdrop_set_message(t('Error loading node !nid while configuring attribute options.', array('!nid' => $form_state['values']['uc_product_as_attribute_option_node'])));
     }
   }
   else {
@@ -289,7 +303,7 @@ function uc_product_as_attribute_option_uc_object_options_form_submit($form, &$f
 function uc_product_as_attribute_option_configure_adjustments($oid, $node) {
   $option = uc_attribute_option_load($oid);
   if (!$option) {
-    drupal_set_message(t('An attribute option with ID !id does not exist.', array('!id' => $oid)), 'error');
+    backdrop_set_message(t('An attribute option with ID !id does not exist.', array('!id' => $oid)), 'error');
     return;
   }
 
@@ -308,7 +322,7 @@ function uc_product_as_attribute_option_configure_adjustments($oid, $node) {
 function uc_product_as_attribute_option_uc_product_alter(&$variant) {
   // If we are displaying as a unit, we need to alter the price so that the
   // hidden product doesn't add the cost of its option twice
-  $cart_behavior = variable_get('uc_product_as_attribute_option_cart_display', 'none');
+  $cart_behavior = config_get('uc_product_as_attribute_option.settings', 'cart_display');
   if (isset($variant->data['uc_product_as_attribute_option_products']) && in_array($cart_behavior, array('unit', 'individual'))) {
     foreach ($variant->data['uc_product_as_attribute_option_products'] as $nid) {
       if ($product = node_load($nid)) {
@@ -339,7 +353,7 @@ function uc_product_as_attribute_option_uc_add_to_cart($nid, $qty, $data) {
   $unique_id = uniqid('', TRUE);
   $node = node_load($nid);
   $associations = uc_product_as_attribute_option_get_associations_by_product($nid);
-  $cart_behavior = variable_get('uc_product_as_attribute_option_cart_display', 'none');
+  $cart_behavior = config_get('uc_product_as_attribute_option.settings', 'cart_display');
   if (in_array($cart_behavior, array('unit', 'individual')) && $associations && $data['module'] != 'uc_product_as_attribute_option') {
     // Add any associated option node products with our metadata
     $data['uc_product_as_attribute_option_products'] = array();
@@ -377,6 +391,7 @@ function uc_product_as_attribute_option_uc_cart_display($item) {
   static $products;
   static $all_products;
 
+  $config = config('uc_product_as_attribute_option.settings');
   $unique_id = $item->data['unique_id'];
 
   // Load the parent node; this is what we want to display in the cart. If the
@@ -384,11 +399,11 @@ function uc_product_as_attribute_option_uc_cart_display($item) {
   $nid = isset($item->data['uc_product_as_attribute_option_attached_to']) ? $item->data['uc_product_as_attribute_option_attached_to'] : $item->nid;
   $node = node_load($nid);
 
-  if (variable_get('uc_product_as_attribute_option_cart_display', 'none') == 'individual') {
+  if ($config->get('cart_display') == 'individual') {
     // Business as usual
     return uc_product_uc_cart_display($item);
   }
-  elseif (variable_get('uc_product_as_attribute_option_cart_display', 'none') == 'unit') {
+  elseif ($config->get('cart_display') == 'unit') {
     // We have to hide nodes associated to the selected attribute options
 
     $associations = uc_product_as_attribute_option_get_associations_by_product($node->nid);
@@ -449,7 +464,7 @@ function uc_product_as_attribute_option_uc_cart_display($item) {
     }
 
     if ($done) {
-      drupal_add_css(drupal_get_path('module', 'uc_product_kit') . '/uc_product_kit.css');
+      backdrop_add_css(backdrop_get_path('module', 'uc_product_kit') . '/uc_product_kit.css');
       $elements[$unique_id]['data'] = array('#type' => 'value', '#value' => serialize($elements[$unique_id]['data']));
       $element = $elements[$unique_id];
       unset($products[$unique_id]);
@@ -531,10 +546,10 @@ function uc_product_as_attribute_option_save($oid, $nid) {
 
   // Merge in the data
   if (db_query("SELECT COUNT(*) FROM {uc_product_as_attribute_option} WHERE oid = :oid", array(':oid' => $oid))->fetchField()) {
-    drupal_write_record('uc_product_as_attribute_option', $row, 'oid');
+    backdrop_write_record('uc_product_as_attribute_option', $row, 'oid');
   }
   else {
-    drupal_write_record('uc_product_as_attribute_option', $row);
+    backdrop_write_record('uc_product_as_attribute_option', $row);
   }
 }
 
@@ -551,7 +566,7 @@ function uc_product_as_attribute_option_delete($oid) {
 function uc_product_as_attribute_option_uc_checkout_complete($order, $account) {
   // Without itemization, stock management won't natively trigger. We have to
   // manually load the option nodes and process stock management.
-  if (variable_get('uc_product_as_attribute_option_cart_display', 'none') == 'none_stock') {
+  if (config_get('uc_product_as_attribute_option.settings', 'cart_display') == 'none_stock') {
     foreach ($order->products as $product) {
       if (isset($product->data) && isset($product->data['attributes']) && is_array($product->data['attributes'])) {
         foreach ($product->data['attributes'] as $attribute_label => $option_info) {
@@ -572,7 +587,7 @@ function uc_product_as_attribute_option_uc_checkout_complete($order, $account) {
               $stock = db_query("SELECT * FROM {uc_product_stock} WHERE sku = :sku", array(':sku' => $associated_product->model))->fetchObject();
 
               // Should we notify?
-              if (variable_get('uc_stock_threshold_notification', FALSE) && $stock->stock <= $stock->threshold) {
+              if (config_get('uc_stock.settings', 'uc_stock_threshold_notification') && $stock->stock <= $stock->threshold) {
                 _uc_stock_send_mail($order, $associated_product, $stock);
               }
 
