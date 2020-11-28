@@ -1,3 +1,9 @@
+## Status
+
+This module is the result of an abandoned attempt to port this Drupal 7
+functionality to Backdrop. **It does not work** and needs further attention. If
+you're interested, open an issue asking to be made a maintainer.
+
 ## What does uc_product_as_attribute_option do?
 
 * Allows for the association attribute options to other product nodes
